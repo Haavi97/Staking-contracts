@@ -15,12 +15,15 @@ describe("VestingFactory", function () {
     [owner, otherAccount] = await ethers.getSigners();
     testToken = await TestToken.deploy(owner);
     vestingFactory = await VestingFactory.deploy();
-    console.log("TestToken deployed to:", testToken.address);
-    console.log("VestingFactory deployed to:", vestingFactory.address);
+    console.log("TestToken deployed to:", await testToken.getAddress());
+    console.log(
+      "VestingFactory deployed to:",
+      await vestingFactory.getAddress()
+    );
   });
 
   it("should deploy a Vesting contract", async function () {
-    const tokenAddress = testToken.address;
+    const tokenAddress = await testToken.getAddress();
     const baseReward = 5;
     const apy = 120;
     const swapRate = 10;
@@ -69,7 +72,20 @@ describe("Vesting", function () {
   beforeEach(async function () {
     Vesting = await ethers.getContractFactory("Vesting");
     [owner, otherAccount] = await ethers.getSigners();
-    vesting = await Vesting.deploy(owner);
+    const tokenAddress = await testToken.getAddress();
+    const baseReward = 5;
+    const apy = 120;
+    const swapRate = 10;
+    const timePeriod = 60;
+
+    vesting = await Vesting.deploy(
+      tokenAddress,
+      baseReward,
+      apy,
+      swapRate,
+      timePeriod,
+      owner
+    );
   });
 
   it("should be able to change the token set", async function () {

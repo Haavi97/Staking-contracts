@@ -40,7 +40,11 @@ contract Vesting is Ownable {
         uint _swapRate,
         uint _timePeriod,
         address initialOwner
+<<<<<<< HEAD
     ) Ownable(initialOwner){
+=======
+    ) Ownable(initialOwner) {
+>>>>>>> 80fa72057eca43708875e13fce84a33d4dc3fe7d
         tokenA = IERC20(_tokenAddress);
         baseReward = _baseReward;
         apy = _apy;
@@ -140,4 +144,8 @@ contract Vesting is Ownable {
             monthsPassed;
         return rewardAmount;
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 80fa72057eca43708875e13fce84a33d4dc3fe7d

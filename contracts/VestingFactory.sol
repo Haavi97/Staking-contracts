@@ -21,7 +21,11 @@ contract VestingFactory {
                 _apy,
                 _swapRate,
                 _timePeriod,
+<<<<<<< HEAD
                 _initialOwner
+=======
+                msg.sender
+>>>>>>> 80fa72057eca43708875e13fce84a33d4dc3fe7d
             )
         );
         deployedVestingContracts.push(newVestingContract);
