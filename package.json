@@ -1,4 +1,13 @@
 {
+  "name": "staking-contracts",
+  "version": "0.0.1",
+  "description": "Contracts for the Staker app",
+  "main": "",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "npx hardhat ignition deploy ./ignition/modules/Staking.js --network localhost"
+  },
   "dependencies": {
     "@nomicfoundation/hardhat-ignition": "^0.15.1",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
