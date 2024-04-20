@@ -19,7 +19,8 @@ contract VestingFactory {
                 _baseReward,
                 _apy,
                 _swapRate,
-                _timePeriod
+                _timePeriod,
+                msg.sender
             )
         );
         deployedVestingContracts.push(newVestingContract);
