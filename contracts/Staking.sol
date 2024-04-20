@@ -29,11 +29,14 @@ contract Staking is Ownable {
     //tokenA address to be assigned by a function
     IERC20 public tokenA;
 
+    // --- CONSTRUCTOR ---
+    constructor(address initialOwner) Ownable(initialOwner) {}
+
     // --- MODIFIERS ---
-    //MODIFIER-1: checking if user has a valid stake amount. 
+    //MODIFIER-1: checking if user has a valid stake amount.
     error NotStaker(address caller, string message);
     modifier onlyStakers() {
-        if(stakers[msg.sender] == 0 ) {
+        if (stakers[msg.sender] == 0) {
             revert NotStaker(msg.sender, "you have 0 stake amount");
         }
         _;
@@ -42,7 +45,7 @@ contract Staking is Ownable {
     //MODIFIER-2: Pausing system in case of emergencies, onlyOwner can pause and unpause
     bool public isPaused = false;
     modifier pauseStatus() {
-        if(isPaused == true) {
+        if (isPaused == true) {
             revert("System is paused, contact Owner");
         }
         _;
@@ -55,40 +58,49 @@ contract Staking is Ownable {
     // 10 means 10% apy.
     uint public apy = 10;
     function updateApy(uint _newApy) external onlyOwner {
-        require(_newApy != 0 && _newApy < 30, "apy should have reasonable limits");
+        require(
+            _newApy != 0 && _newApy < 30,
+            "apy should have reasonable limits"
+        );
         apy = _newApy;
     }
 
     // SUPPORT FUNCTION 2: assigning token address
-    function setToken (address _tokenA) external onlyOwner {
+    function setToken(address _tokenA) external onlyOwner {
         tokenA = IERC20(_tokenA);
     }
 
     // SUPPORT FUNCTION 3: calculate stake reward
     // Reward will be calculated on a daily basis on compound interest formula. Current apy is 10%.
     // startTime will be obtained from staking record. Endtime will be function block.timestamp
-    function calculateReward(uint _amount, uint _startTime) public view returns(uint) {
+    function calculateReward(
+        uint _amount,
+        uint _startTime
+    ) public view returns (uint) {
         uint principal = _amount;
         //getting number of days stake remained in the system
         uint numberDays = (block.timestamp - _startTime) / 1 days;
         //calculating reward(yield) on a daily basis
-        for(uint i=0; i<numberDays; i++) {
-            principal += principal * (apy/365);
+        for (uint i = 0; i < numberDays; i++) {
+            principal += principal * (apy / 365);
         }
         uint reward = principal - _amount;
         return reward;
-    }   
+    }
 
     //user can claim reward for their stakes. To specify which stake, user needs to enter an index number
     //for the  StakeDetails[] array. User can specify his choice on the frontend website, and later web3
     //functions will convey the index number to the function below.
-    function claimReward(address _to, uint _index) external onlyStakers pauseStatus {
+    function claimReward(
+        address _to,
+        uint _index
+    ) external onlyStakers pauseStatus {
         //input checks
         require(_to != address(0), "Cannot claim from address 0");
 
         uint stakeAmount = StakeDetailsMapping[msg.sender][_index].amount;
         uint stakeTime = StakeDetailsMapping[msg.sender][_index].startTime;
-        
+
         require(stakeAmount > 0, "stake amount must be bigger than 0");
 
         uint reward = calculateReward(stakeAmount, stakeTime);
@@ -101,7 +113,6 @@ contract Staking is Ownable {
 
     //In case person would like to stake his reward, they can stake it here
     function stakeReward(uint _index) external onlyStakers pauseStatus {
-
         //fetching stake details for reward(yield) calculation
         uint stakeAmount = StakeDetailsMapping[msg.sender][_index].amount;
         uint stakeTime = StakeDetailsMapping[msg.sender][_index].startTime;
@@ -120,22 +131,21 @@ contract Staking is Ownable {
         StakeDetails memory newStake = StakeDetails(reward, block.timestamp);
         //pushing new stake record to the stake array of the msg.sender
         StakeDetailsMapping[msg.sender].push(newStake);
-        
+
         emit RewardStaked(msg.sender, _index, reward);
     }
-
 
     //Function lets everyone to stake anytime they want and as many times they want.
     //Each stake will be a new staking record.
     function stake(uint _amount) public pauseStatus {
         require(msg.sender != address(0), "Cannot stake from address 0");
         require(_amount > 0, "stake must be > 0");
-        
+
         //decimals are handled by the function.
-        uint amount = _amount * (10**18);
+        uint amount = _amount * (10 ** 18);
 
         //assumption: user already approved contract. Now we can transfer tokens for staking.
-        //approval will be done on the frontend by creating token contract instance. 
+        //approval will be done on the frontend by creating token contract instance.
         //I can create token contract instance on the frontend by using Zustand and use it across all components
         tokenA.transferFrom(msg.sender, address(this), amount);
 
@@ -153,7 +163,10 @@ contract Staking is Ownable {
 
     //users can unstake their stakes. In this unstaking amount + accummulated reward will be
     //transferred to the msg.sender mapping(address => StakeDetails[]) public StakeDetailsMapping;
-    function unstake(address _to, uint _index) external onlyStakers pauseStatus {
+    function unstake(
+        address _to,
+        uint _index
+    ) external onlyStakers pauseStatus {
         //input and general checks
         require(_to != address(0), "Cannot claim from address 0");
         require(msg.sender != address(0), "Cannot stake from address 0");
@@ -167,38 +180,50 @@ contract Staking is Ownable {
         uint totalAmount = stakeAmount + reward;
         stakers[msg.sender] -= stakeAmount;
         //then stake is removed from staking list of user with this for loop
-        for (uint256 i = _index; i < StakeDetailsMapping[msg.sender].length - 1; i++) {
-            StakeDetailsMapping[msg.sender][i] = StakeDetailsMapping[msg.sender][i+1];
+        for (
+            uint256 i = _index;
+            i < StakeDetailsMapping[msg.sender].length - 1;
+            i++
+        ) {
+            StakeDetailsMapping[msg.sender][i] = StakeDetailsMapping[
+                msg.sender
+            ][i + 1];
         }
-        StakeDetailsMapping[msg.sender].pop();   
+        StakeDetailsMapping[msg.sender].pop();
 
         //after removing stake, now we can transfer amount+reward to the user
         tokenA.transfer(_to, totalAmount);
 
-        emit Unstaked(_to, _index); 
-    } 
+        emit Unstaked(_to, _index);
+    }
 
-    function decreaseStake(uint _index, uint _decreaseAmount, address _to) external onlyStakers pauseStatus { 
+    function decreaseStake(
+        uint _index,
+        uint _decreaseAmount,
+        address _to
+    ) external onlyStakers pauseStatus {
         //input and general checks
         require(_to != address(0), "Cannot claim from address 0");
         require(msg.sender != address(0), "Cannot stake from address 0");
 
         //decimals are handled by the function.
-        uint decreaseAmount = _decreaseAmount * (10**18);
+        uint decreaseAmount = _decreaseAmount * (10 ** 18);
 
         //fetching stake details and calculating reward(yield)
         uint stakeAmount = StakeDetailsMapping[msg.sender][_index].amount;
         uint stakeTime = StakeDetailsMapping[msg.sender][_index].startTime;
         require(stakeAmount > 0, "stake amount must be bigger than 0");
         uint reward = calculateReward(stakeAmount, stakeTime);
-        
+
         //resetting stake record
         uint newStakeAmount = stakeAmount - decreaseAmount;
-        if(newStakeAmount < 1){
-            revert("You have decreased way too much. Consider using unstaking.");
+        if (newStakeAmount < 1) {
+            revert(
+                "You have decreased way too much. Consider using unstaking."
+            );
         }
         stakers[msg.sender] -= decreaseAmount;
-        
+
         StakeDetailsMapping[msg.sender][_index].amount = newStakeAmount;
         StakeDetailsMapping[msg.sender][_index].startTime = block.timestamp;
 
@@ -207,42 +232,46 @@ contract Staking is Ownable {
 
         emit StakeDecreased(_to, _index, decreaseAmount);
     }
-    
+
     //Liquidity provision by owner is needed, so that we can give out rewards to stakers
     function provideLiquidity(uint _amount) external pauseStatus {
         require(msg.sender != address(0), "Cannot stake from address 0");
         require(_amount > 0, "stake must be > 0");
-        uint amount = _amount * (10**18);
+        uint amount = _amount * (10 ** 18);
         tokenA.transferFrom(msg.sender, address(this), amount);
     }
 
     //VIEW FUNCTIONS
-    function displayStakes() external view returns(StakeDetails[] memory) {
+    function displayStakes() external view returns (StakeDetails[] memory) {
         return StakeDetailsMapping[msg.sender];
     }
 
-    function displaySpecificStake(uint _index) external view returns(StakeDetails memory) {
+    function displaySpecificStake(
+        uint _index
+    ) external view returns (StakeDetails memory) {
         return StakeDetailsMapping[msg.sender][_index];
     }
 
-    function displaySpecificStakeAmount(uint _index) external view returns(uint){
-        return StakeDetailsMapping[msg.sender][_index].amount / (10**18);
+    function displaySpecificStakeAmount(
+        uint _index
+    ) external view returns (uint) {
+        return StakeDetailsMapping[msg.sender][_index].amount / (10 ** 18);
     }
 
-    function displayStakeBalance() external view returns(uint) {
-        return stakers[msg.sender] / (10**18);
+    function displayStakeBalance() external view returns (uint) {
+        return stakers[msg.sender] / (10 ** 18);
     }
 
-    function getContractTokenABalance() external view returns(uint) {
-        return tokenA.balanceOf(address(this)) / (10**18);
+    function getContractTokenABalance() external view returns (uint) {
+        return tokenA.balanceOf(address(this)) / (10 ** 18);
     }
 
-    function getYourTokenABalance() external view returns(uint) {
-        return tokenA.balanceOf(msg.sender) / (10**18);
+    function getYourTokenABalance() external view returns (uint) {
+        return tokenA.balanceOf(msg.sender) / (10 ** 18);
     }
 
-    fallback() external payable{}
-    receive() external payable{}
+    fallback() external payable {}
+    receive() external payable {}
 
     /*
     MAIN FUNCTIONS
