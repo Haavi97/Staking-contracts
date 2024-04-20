@@ -11,7 +11,8 @@ contract VestingFactory {
         uint _baseReward,
         uint _apy,
         uint _swapRate,
-        uint _timePeriod
+        uint _timePeriod,
+        address _initialOwner
     ) public {
         address newVestingContract = address(
             new Vesting(
@@ -19,7 +20,8 @@ contract VestingFactory {
                 _baseReward,
                 _apy,
                 _swapRate,
-                _timePeriod
+                _timePeriod,
+                _initialOwner
             )
         );
         deployedVestingContracts.push(newVestingContract);
